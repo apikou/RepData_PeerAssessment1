@@ -6,6 +6,13 @@ Rmarkdown for Peer Assessment 1
 
 ```r
 unzip("activity.zip")
+```
+
+```
+## Warning: error 1 in extracting from zip file
+```
+
+```r
 activity <- read.csv("activity.csv",colClasses=c("numeric","Date","numeric"))
 str(activity)
 ```
@@ -22,15 +29,15 @@ str(activity)
 
 ```r
 x <- aggregate (steps~date,activity,sum)
-hist(x[,2],main="histogram",xlab="number of steps per day",ylim=c(0,15),breaks=20)
+hist(x$steps,main="Total Daily Steps",xlab="days",ylab="Number of steps",breaks=10)
 ```
 
-![plot of chunk unnamed-chunk-2](figure/unnamed-chunk-2.png) 
+![plot of chunk unnamed-chunk-2](./PA1_template_files/figure-html/unnamed-chunk-2.png) 
 
 2- Mean and Median daily activities :
 
 ```r
-mean(x[,2])
+mean(x$steps)
 ```
 
 ```
@@ -38,7 +45,7 @@ mean(x[,2])
 ```
 
 ```r
-median(x[,2])
+median(x$steps)
 ```
 
 ```
@@ -54,7 +61,7 @@ y <- aggregate (steps~interval,activity,mean)
 plot(y,type="l")
 ```
 
-![plot of chunk unnamed-chunk-4](figure/unnamed-chunk-4.png) 
+![plot of chunk unnamed-chunk-4](./PA1_template_files/figure-html/unnamed-chunk-4.png) 
 -More activity early in the morning.
 
 2- Interval containing the max number of steps :
@@ -79,24 +86,57 @@ sum(is.na(activity))
 ```
 ## [1] 2304
 ```
-2-Devise a strategy for filling in all of the missing values in the dataset, i am replacing missing values (NA) in steps variable by the 5 minutes intervals means.I just used a simple approch : by looking at data i did notice tht data are missing for these 8 days : 2012-10-01 2012-10-08 2012-11-01 2012-11-04 2012-11-09 2012-11-10 
- 2012-11-14 and 2012-11-30 , i replaced their steps missing values by the intervals means like this : 
+2-Devise a strategy for filling in all of the missing values in the dataset, i am replacing missing values (NA) in steps variable by the 5 minutes intervals means.subset activity in naactivity and nonaactivity , use match() ,and rbind the resulting datas. 
 
 ```r
-w1 <- activity[(activity[,2] == "2012-10-01"),]$steps <- y$steps
-w2 <- activity[(activity[,2] == "2012-10-08"),]$steps <- y$steps
-w3 <- activity[(activity[,2] == "2012-11-01"),]$steps <- y$steps
-w4 <- activity[(activity[,2] == "2012-11-04"),]$steps <- y$steps
-w5 <- activity[(activity[,2] == "2012-11-09"),]$steps <- y$steps
-w6 <- activity[(activity[,2] == "2012-11-10"),]$steps <- y$steps
-w7 <- activity[(activity[,2] == "2012-11-14"),]$steps <- y$steps
-w8 <- activity[(activity[,2] == "2012-11-30"),]$steps <- y$steps
-activity1 <- activity
+naactivity <- activity[is.na(activity$steps),] 
+nonaactivity <- activity[!is.na(activity$steps),]
+head(naactivity)
 ```
-# we have now a new dataset activity1 with no missing values for steps:
+
+```
+##   steps       date interval
+## 1    NA 2012-10-01        0
+## 2    NA 2012-10-01        5
+## 3    NA 2012-10-01       10
+## 4    NA 2012-10-01       15
+## 5    NA 2012-10-01       20
+## 6    NA 2012-10-01       25
+```
 
 ```r
-str(activity1)
+head(nonaactivity)
+```
+
+```
+##     steps       date interval
+## 289     0 2012-10-02        0
+## 290     0 2012-10-02        5
+## 291     0 2012-10-02       10
+## 292     0 2012-10-02       15
+## 293     0 2012-10-02       20
+## 294     0 2012-10-02       25
+```
+
+```r
+head(y)
+```
+
+```
+##   interval   steps
+## 1        0 1.71698
+## 2        5 0.33962
+## 3       10 0.13208
+## 4       15 0.15094
+## 5       20 0.07547
+## 6       25 2.09434
+```
+
+```r
+logical <- match(y$interval,naactivity$interval)
+naactivity[,"steps"] <- y[match(y$interval,naactivity$interval),2]
+impactivity <- rbind(naactivity,nonaactivity)
+str(impactivity)
 ```
 
 ```
@@ -105,25 +145,57 @@ str(activity1)
 ##  $ date    : Date, format: "2012-10-01" "2012-10-01" ...
 ##  $ interval: num  0 5 10 15 20 25 30 35 40 45 ...
 ```
+all  naactivity steps are replaced with y$steps (288 values replicated)
+now rbind naactivity and nonaactivity to have a complete imputed data but the rows
+order is different form activity rows order 
+we have now a new dataset impactivity with no missing values for steps:
 
 ```r
-sum(is.na(activity1))
+str(activity)
 ```
 
 ```
-## [1] 0
+## 'data.frame':	17568 obs. of  3 variables:
+##  $ steps   : num  NA NA NA NA NA NA NA NA NA NA ...
+##  $ date    : Date, format: "2012-10-01" "2012-10-01" ...
+##  $ interval: num  0 5 10 15 20 25 30 35 40 45 ...
+```
+
+```r
+sum(is.na(activity))
+```
+
+```
+## [1] 2304
 ```
 3-Make a histogram of the total number of steps taken each day and Calculate and report the mean and median total number of steps taken per day. Do these values differ from the estimates from the first part of the assignment? What is the impact of imputing missing data on the estimates of the total daily number of steps?
 
 ```r
-x <- aggregate (activity$steps~activity$date,activity,sum)
-hist(x[,2],main="histogram",xlab="number of steps per day",ylim=c(0,20),breaks=20)
+x1 <- aggregate (steps~date,impactivity,sum)
+#par(mfrow=c(2,1))
+hist(x$steps,main="Total daily steps before imputation",xlab="Days",
+     ylab="Number of steps",breaks=10)
 ```
 
-![plot of chunk unnamed-chunk-9](figure/unnamed-chunk-9.png) 
+![plot of chunk unnamed-chunk-9](./PA1_template_files/figure-html/unnamed-chunk-91.png) 
 
 ```r
-mean(x[,2])
+hist(x1$steps,main="Total daily steps after imputation",xlab="Days",
+     ylab="Number of steps",breaks=10)
+```
+
+![plot of chunk unnamed-chunk-9](./PA1_template_files/figure-html/unnamed-chunk-92.png) 
+
+```r
+sum(x1$steps)  
+```
+
+```
+## [1] 656738
+```
+
+```r
+mean(x1$steps)
 ```
 
 ```
@@ -131,7 +203,7 @@ mean(x[,2])
 ```
 
 ```r
-median(x[,2])
+median(x1$steps)
 ```
 
 ```
@@ -148,19 +220,19 @@ sapply on date variable to extract the desired type of day with the help of the 
 
 
 ```r
-daytype <- function(date){
-  if(weekdays(as.Date(date)) %in% c("Saturday","Sunday")) {
+day <- function(date){
+  if(weekdays(date) %in% c("Saturday","Sunday")) {
     "weekend"
   }else{
     "weekday"
   }  
 }
-activity1$daytype <- as.factor(sapply(activity1$date,daytype))
-head(activity1)
+impactivity$day <-sapply(impactivity$date,day)
+head(impactivity)
 ```
 
 ```
-##     steps       date interval daytype
+##     steps       date interval     day
 ## 1 1.71698 2012-10-01        0 weekday
 ## 2 0.33962 2012-10-01        5 weekday
 ## 3 0.13208 2012-10-01       10 weekday
@@ -174,13 +246,12 @@ head(activity1)
 
 ```r
 par(mfrow=c(2,1))
-for( type in c("weekend","weekday")){
-     steps.type <- aggregate(steps ~ interval, data = activity1, subset = activity1$daytype==type,FUN=mean)
-   plot(steps.type,type ="l",main = type)
+for( day in c("weekend","weekday")){
+     steps.day <- aggregate(steps ~ interval, data = impactivity, subset = impactivity$day==day,FUN=mean)
+   plot(steps.day,type ="l",main = day)
 } 
 ```
 
-![plot of chunk unnamed-chunk-11](figure/unnamed-chunk-11.png) 
+![plot of chunk unnamed-chunk-11](./PA1_template_files/figure-html/unnamed-chunk-11.png) 
 
 -Similar activities for both days in the morning , but more activity in weekend for the rest  of the day. 
-
